@@ -5,7 +5,7 @@ O jogo está modularizado.
 - Intelligence (São aquelas funções relacionadas às jogadas efetuadas
 pelo computador)
 
-Sendo assim, separamos as funções em 3 arquivos: screen.c, core.c e intelligence.c
+Sendo assim, as funções estão separadas em 3 arquivos: screen.c, core.c e intelligence.c
 Cada uma delas possui seu respectivo cabeçalho: screen.h, core.h e intelligence.h
 
 Todos cabeçalhos estão sendo incluídos na main que está no arquivo othellox.c
@@ -13,8 +13,7 @@ Todos cabeçalhos estão sendo incluídos na main que está no arquivo othellox.
 * IMPORTANTE *
 
 Para compilar o código e fazer a linkagem automaticamente de todos os objetos
-basta executar 'make' no terminal, pois o trabalho entregue no formato .zip
-apresenta um arquivo makefile.
+basta executar 'make' no terminal.
 
 Certifique-se, no entanto, de fazer isso em uma pasta em que não contenha outros
 arquivos .c , pois se não o compilador gcc irá notar que existe mais de um código
