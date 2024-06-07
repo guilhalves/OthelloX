@@ -8,7 +8,7 @@ pelo computador)
 Sendo assim, as funções estão separadas em 3 arquivos: screen.c, core.c e intelligence.c
 Cada uma delas possui seu respectivo cabeçalho: screen.h, core.h e intelligence.h
 
-Todos cabeçalhos estão sendo incluídos na main que está no arquivo othellox.c
+Todos cabeçalhos estão sendo incluídos na main que está no arquivo main.c
 
 * IMPORTANTE *
 
@@ -18,18 +18,3 @@ basta executar 'make' no terminal.
 Certifique-se, no entanto, de fazer isso em uma pasta em que não contenha outros
 arquivos .c , pois se não o compilador gcc irá notar que existe mais de um código
 com uma função main e retornará um erro.
-
-* DIREITO AUTORAL DA MÚSICA * 
-
-Compositor KevinMacLeod
-
-LINK DA MÚSICA:
-
-https://www.youtube.com/watch?v=3l7tuhHdke4
-
-LICENÇA DA MÚSICA:
-
-https://creativecommons.org/licenses/by/3.0/
-
-LINK DO EFEITO SONORO (Autor: Jofae):
-https://freesound.org/people/Jofae/sounds/382574/
