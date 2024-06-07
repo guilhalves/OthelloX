@@ -1,5 +1,5 @@
 CC=gcc
-LDFLAGS=-lSDL2 -lSDL2_mixer
+LDFLAGS=-lSDL2 -lm
 CCFLAGS=-g -Wall
 BIN=Othello-X
 

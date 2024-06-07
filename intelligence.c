@@ -1,184 +1,180 @@
 #include "intelligence.h"
-#include "screen.h"
 
-const int weight_matrix[8][8] =
+#define MAX_TIME 1 
+
+const int weights_matrix[64] =
 {
-	{30, -15, 0, -1, -1, 0, -15, 30},
-	{-15, -12, -3, -3, -3, -3, -12, -15},
-	{0, -3, 0, -1, -1, 0, -3, 0},
-	{-1, -3, -1, -1, -1, -1, -3, -1},
-	{-1, -3, -1, -1, -1, -1, -3, -1},
-	{0, -3, 0, -1, -1, 0, -3, 0},
-	{-12, -15, -3, -3, -3, -3, -15, -12},
-	{30, -12, 0, -1, -1, 0, -12, 30}
+	30, -12, 0, -1, -1, 0, -12, 30,
+	-12, -15, -3, -3, -3, -3, -15, -12,
+	0, -3, 0, -1, -1, 0, -3, 0,
+	-1, -3, -1, -1, -1, -1, -3, -1,
+	-1, -3, -1, -1, -1, -1, -3, -1,
+	0, -3, 0, -1, -1, 0, -3, 0,
+	-12, -15, -3, -3, -3, -3, -15, -12,
+	30, -12, 0, -1, -1, 0, -12, 30
 };
 
-COORD *GetChilds(NODE node, int *num_moves) {
+double EvalFunction(BOARD board) {
 
-	COORD *childs;
-
-	COORD temp_childs[SIZE*SIZE];
-
-	COORD cell;
-
-	int changes;
-
-	*num_moves=0;
-
-	for (int i = 0; i < SIZE; i++) {
-		for (int j = 0; j < SIZE; j++) {
-
-			cell.row=i;
-			cell.column=j;
-
-			changes=Simulate(&node, cell, 0);
-
-			if (changes > 0) {
-				temp_childs[*num_moves]=cell;
-				*num_moves=*num_moves+1;
-			}
-		}
-	}
-	childs=(COORD *)malloc(*num_moves*sizeof(COORD));
-
-	for (int k = 0; k < *num_moves; k++) {
-		childs[k]=temp_childs[k];
-	}
-
-	return(childs);
-}
-
-double EvalFunction(NODE node) {
-
-	int score;
-
+	double score;
+	
 	int player_eval=0;
+	int player_disks;
 	int enemy_eval=0;
-
-	for (int i = 0; i < 8; i++)
+	int enemy_disks;
+	
+	for (int i = 0; i < 64; i++)
 	{
-		for (int j = 0; j < 8; j++)
+		if ((CoordToBit(i/8, i%8) & board.playerBoards[board.turn]) != 0)
 		{
-			if (node.board[i][j] == node.player)
-			{
-				player_eval+=weight_matrix[i][j];
-			}
-			if (node.board[i][j] == (node.player+1)%2)
-			{
-				enemy_eval+=weight_matrix[i][j];
-			}
+			player_eval+=weights_matrix[i];	
+		}
+		if ((CoordToBit(i/8, i%8) & board.playerBoards[1-board.turn]) != 0)
+		{
+			enemy_eval+=weights_matrix[i];	
 		}
 	}
+	
+	score=player_eval-enemy_eval;
+	
+	player_disks=DiskCount(board.playerBoards[board.turn], board.turn);
 
-	if (node.num_disks[node.player] == 0)
+	enemy_disks=DiskCount(board.playerBoards[1-board.turn], 1-board.turn);
+	
+	int dif = player_disks - enemy_disks;
+	int sum = player_disks + enemy_disks;
+	
+	if (sum >= 40)
 	{
-		return(-INT_MAX);
+		return(dif);
 	}
-
-	if (node.num_disks[(node.player+1)%2] == 0)
-	{
-		return(INT_MAX);	
-	}
-
-	score=player_eval/node.num_disks[node.player]-enemy_eval/node.num_disks[(node.player+1)%2];
-
+	
 	return(score);
-}
+	//double weight = -64*atan(sum-40)+128;
+	//return((dif*weight+score*(256-weight))/1000);
+	
+}	
 
 
-
-int Max(int a, int b) {
+double Max(double a, double b) {
 	if (a >= b) {
 		return(a);
 	}
 	return(b);
 }
 
-double NegaMax(NODE node, int depth, bool passed, double alpha, double beta) {
+double NegaMax(BOARD board, int depth, bool passed, double alpha, double beta, clock_t initial_time) {
 
 	if (depth == 0) {
-		return(EvalFunction(node));
+		return(EvalFunction(board));
 	}	
+	
+	if ((float)(clock()-initial_time)/CLOCKS_PER_SEC >= MAX_TIME)
+	{
+		return(-INT_MAX);
+	}
 
 	double max_eval=-INT_MAX;
 
-	int num_moves;
-
 	double eval;
 
-	NODE temp_node;
+	ulong move_board;
+	BOARD temp_board;
 
-	COORD *childs;
+	ulong legal_board=GetLegalMoves(board);
 
-	childs=GetChilds(node, &num_moves);
-
-	if (num_moves == 0) {
+	if (legal_board == 0)
+	{
 		if (passed)
 		{
-			free(childs);
-			return(EvalFunction(node));
+			return(EvalFunction(board));
 		}
-		free(childs);
-		node.player=(node.player+1)%2;
-		return(-NegaMax(node, depth, true, -alpha, -beta));
+		board.turn=1-board.turn;
+		return(-NegaMax(board, depth, true, -alpha, -beta, initial_time));
 	}
+	
 
-	for (int k = 0; k < num_moves; k++) {
+	// SORT FUNCTION
 
-		temp_node=node;
-
-		Simulate(&temp_node, childs[k], 1);
-
-		eval=-NegaMax(temp_node, depth - 1, false, -alpha, -beta);
-
-		if (eval >= beta)
+	for (int i = 0; i < 64; i++)
+	{
+		move_board=CoordToBit(i/8, i%8);
+		if ((move_board & legal_board) != 0)
 		{
-			free(childs);
-			return(eval);
+			temp_board=board;
+			Play(&temp_board, move_board);
+			eval=-NegaMax(temp_board, depth-1, false, -alpha, -beta, initial_time);
+			if (eval >= beta)
+			{
+				return(eval);
+			}
+			alpha=Max(alpha, eval);
+			max_eval=Max(max_eval, eval);
 		}
-
-		alpha=Max(alpha, eval);
-
-		max_eval=Max(max_eval, eval);
 	}
 
-
-	free(childs);
 	return(max_eval);
 }
 
-COORD SearchBest(NODE node, int depth)
+
+
+ulong SearchBest(BOARD board, clock_t initial_time)
 {
-	int num_moves;
+	int depth=0;
 
 	double eval;
 
 	double alpha=-INT_MAX;
 	double beta=INT_MAX;
+	double max_eval;
 
-	NODE temp_node;
+	BOARD temp_board;
 
-	COORD best_move;
+	int x, y;
 
-	COORD *childs;
+	ulong legal_board=GetLegalMoves(board);
+	ulong best_move;
+	ulong temp_best_move;
+	ulong move_board;
 
-	childs=GetChilds(node, &num_moves);
+	int disks_remaining = 64-(DiskCount(board.playerBoards[0], 0)+DiskCount(board.playerBoards[1], 1));
 
-	for (int k = 0; k < num_moves; k++)
+	while ((float)(clock()-initial_time)/CLOCKS_PER_SEC < MAX_TIME && depth <= disks_remaining)
 	{
-		temp_node=node;
+		best_move=temp_best_move;
+		alpha=-INT_MAX;
+		for (int i = 0; i < 64; i++)
+		{
+			move_board=CoordToBit(i/8, i%8);
+			if ((move_board & legal_board) != 0)
+			{
+				temp_board=board;
+				
+				Play(&temp_board, move_board);
+				
+				eval=-NegaMax(temp_board, depth, false, -alpha, -beta, initial_time);
+				
+				if (fabs(fabs(eval)-INT_MAX) > 1.0e-3)
+				{
+					if (alpha < eval)
+					{
+						x=i%8;
+						y=i/8;
+						alpha=eval;
+						max_eval=eval;
+						temp_best_move=move_board;
+					}	
+				} else
+				{
+					break;
+				}
 
-		Simulate(&temp_node, childs[k], 1);
-
-		eval=-NegaMax(temp_node, depth, false, -alpha, -beta);
-		if (alpha < eval) {
-			alpha=eval;
-			best_move=childs[k];
-			printf("Temporary best move: (%d, %d), eval: %lf\n", best_move.row, best_move.column, eval);
+			}
 		}
+		depth++;
 	}
-
-
-	free(childs);
+	
+	printf("Best move found at (%d,%d)\nEval: %lf, Depth: %d\n", x, y, max_eval, depth);
+	printf("It took %f seconds to find it\n\n", (float)(clock()-initial_time)/CLOCKS_PER_SEC);
 	return(best_move);
 }

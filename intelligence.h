@@ -1,17 +1,33 @@
 #pragma once
 #include "core.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include <math.h>
 #include <limits.h>
+#include <time.h>
 
-extern const int weight_matrix[8][8];
+// A função EvalFunction analisa
+// o quão vantajoso o tabuleiro é
+// para os jogadores, atribuindo ao
+// tabuleiro um número real.
+// Obs: Se o número real for negativo
+// significa que o jogador da vez está em
+// desvantagem, caso contrário ele está em
+// vantagem. No caso em que o número real
+// seja 0, trata-se de um empate.
 
-COORD *GetChilds(NODE node, int *num_moves);
+double EvalFunction(BOARD board);
 
-double EvalFunction(NODE node);
+// Dado dois números a e b, retorna o maior
+// deles;
 
-int Max(int a, int b);
+double Max(double a, double b);
 
-double NegaMax(NODE node, int depth, bool passed, double alpha, double beta);
+// A função NegaMax é um algoritmo de busca pelo melhor
+// lance da vez, considerando que o oponente jogue os melhores
+// lances;
 
-COORD SearchBest(NODE node, int depth);
+double NegaMax(BOARD board, int depth, bool passed, double alpha, double beta, clock_t initial_time);
+
+// A função SearchBest procura pelo melhor lance dado
+// um tempo limite;
+
+ulong SearchBest(BOARD board, clock_t initial_time);
